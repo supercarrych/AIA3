@@ -34,7 +34,7 @@ public class Game {
     private void initializeCells() {
         for (int i = 0; i < board.length ; i++) {
             for (int j = 0; j < board.length ; j++) {
-                Cell cell = new Cell(i, j, board[i][j]);
+                Cell cell = new Cell(j, i, board[i][j]);
                 allCells.add(cell);
                 coveredCells.add(cell);
             }
@@ -80,7 +80,7 @@ public class Game {
             for (int i = 0; i < coveredCells.size(); i++) {
                 Cell cell = coveredCells.get(i);
                 // If all but tornadoes cells are probed without a game over, the agent wins the game.
-                if (board[cell.getX()][cell.getY()] != 't') {
+                if (board[cell.getY()][cell.getX()] != 't') {
                     return false;
                 }
             }
