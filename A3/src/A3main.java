@@ -1,11 +1,11 @@
 
 import java.util.ArrayList;
 
-
+//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 github taken
 public class A3main {
 
 	public static void main(String[] args) {
-		
+
 		boolean verbose=false; //prints the formulas for SAT if true
 		if (args.length>2 && args[2].equals("verbose") ){
 			verbose=true; //prints the formulas for SAT if true
@@ -23,18 +23,22 @@ public class A3main {
 		char[][] p = world.map;
 		printBoard(p);
 		System.out.println("Start!");
-
+		Game game = new Game(world);
+		Agent agent;
 		switch (args[0]) {
-		case "P1":
-			//TODO: Part 1
-		case "P2":
-			//TODO: Part 2
-		case "P3":
-			//TODO: Part 3
-		case "P4":
-			//TODO: Part 4
-		case "P5":
-			//TODO: Part 5
+			case "P1":
+				agent = new Agent(game);
+
+
+
+			case "P2":
+				//TODO: Part 2
+			case "P3":
+				//TODO: Part 3
+			case "P4":
+				//TODO: Part 4
+			case "P5":
+				//TODO: Part 5
 
 		}
 
@@ -46,7 +50,7 @@ public class A3main {
 
 	}
 
-	
+
 	//prints the board in the required format - PLEASE DO NOT MODIFY
 	public static void printBoard(char[][] board) {
 		System.out.println();
