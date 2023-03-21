@@ -3,7 +3,7 @@ import java.util.ArrayList;
 public class Game {
     private World world;
     private char[][] board;
-    // list holding all of the Cell objects
+    // list holding all the Cell objects
     private ArrayList<Cell> allCells;
     // list holding the cells which have not been uncovered
     private ArrayList<Cell> coveredCells;
@@ -24,17 +24,17 @@ public class Game {
         this.gameWon = false;
         this.allCells = new ArrayList<>();
         this.coveredCells = new ArrayList<>();
-        populateCells();
+        initializeCells();
     }
 
     /**
      * Method which populates the allCells and coveredCells array. In the beginning all the cells are covered.
      * The actual view of the Obscured Sweeper world
      */
-    private void populateCells() {
+    private void initializeCells() {
         for (int i = 0; i < board.length ; i++) {
             for (int j = 0; j < board.length ; j++) {
-                Cell cell = new Cell(i, j, board[j][i]);
+                Cell cell = new Cell(i, j, board[i][j]);
                 allCells.add(cell);
                 coveredCells.add(cell);
             }
@@ -80,7 +80,7 @@ public class Game {
             for (int i = 0; i < coveredCells.size(); i++) {
                 Cell cell = coveredCells.get(i);
                 // If all but tornadoes cells are probed without a game over, the agent wins the game.
-                if (board[cell.getY()][cell.getX()] != 't') {
+                if (board[cell.getX()][cell.getY()] != 't') {
                     return false;
                 }
             }
