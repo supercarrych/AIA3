@@ -80,7 +80,6 @@ public class Agent {
         else if (cell.getValue() == '0') {
             cellsWithFreeNeighbours++;
             System.out.println("probe " + cell);
-
         }
         else {
             System.out.println("probe " + cell);
@@ -91,9 +90,9 @@ public class Agent {
      * Method which returns the Cell object from the input Cells list with coordinates passed as parameters
      */
     public Cell findCell(int x, int y,ArrayList<Cell> cellArrayList) {
-        for (int i = 0; i < cellArrayList.size(); i++) {
-            if (cellArrayList.get(i).getX() == x && cellArrayList.get(i).getY() == y) {
-                return cellArrayList.get(i);
+        for (Cell cell : cellArrayList) {
+            if (cell.getX() == x && cell.getY() == y) {
+                return cell;
             }
         }
         return null;
@@ -124,36 +123,38 @@ public class Agent {
     public void orderMove() {
         Cell cell = unProbedCells.get(0);
         probeCell(cell);
+        //free neighbours that clue is 0
+        freeNeighbours();
     }
 
     /**
      * Method which picks a cell based on the single point strategy
      */
     public void SPSMove() {
-        Cell myCell = null;
-        String action = "order";
-        // iterate all unprobed cell to find situations of AFN or AMN
-        for (Cell cell : unProbedCells) {
-            if (checkAFN(cell)) {
-                action = "AFN";
-                myCell = cell;
-                break;
-            } else if (checkAMN(cell)) {
-                action = "AMN";
-                myCell = cell;
-                break;
-            }
-        }
-        // if no unexamined cell is in an AMN or AFN situation, make random move.
-        if (action.equals("order")) {
-            orderMove();
-        } else if (action.equals("AFN")) {
-            //System.out.println("AFN found, probing");
-            probeCell(myCell);
-        } else {
-            //System.out.println("AMN found, marking");
-            markCell(myCell);
-        }
+//        Cell myCell = null;
+//        String action = "order";
+//        // iterate all unprobed cell to find situations of AFN or AMN
+//        for (Cell cell : unProbedCells) {
+//            if (checkAFN(cell)) {
+//                action = "AFN";
+//                myCell = cell;
+//                break;
+//            } else if (checkAMN(cell)) {
+//                action = "AMN";
+//                myCell = cell;
+//                break;
+//            }
+//        }
+//        // if no unexamined cell is in an AMN or AFN situation, make random move.
+//        if (action.equals("order")) {
+//            orderMove();
+//        } else if (action.equals("AFN")) {
+//            //System.out.println("AFN found, probing");
+//            probeCell(myCell);
+//        } else {
+//            //System.out.println("AMN found, marking");
+//            markCell(myCell);
+//        }
     }
 
     public char[][] getAgentBoard() {
@@ -165,53 +166,90 @@ public class Agent {
         ArrayList<Cell> adjacentCells = new ArrayList<>();
         for (Cell cell : probedCells) {
             if (cell.getValue() == '0') {
-                if (cell.getX() > 0 && cell.getY() > 0) {
-                    // check if already probed
-                    Cell adjacentCell = findCell(cell.getX() - 1, cell.getY() - 1,unProbedCells);
-                    if (adjacentCell != null) {
-                        adjacentCells.add(adjacentCell);
-                    }
-                }
-                if (cell.getX() > 0) {
-                    Cell adjacentCell = findCell(cell.getX() - 1, cell.getY(),unProbedCells);
-                    if (adjacentCell != null) {
-                        adjacentCells.add(adjacentCell);
-                    }
-                }
-                if (cell.getY() > 0) {
-                    Cell adjacentCell = findCell(cell.getX(), cell.getY() - 1,unProbedCells);
-                    if (adjacentCell != null) {
-                        adjacentCells.add(adjacentCell);
-                    }
-                }
-                if (cell.getY() < boardLength - 1 && cell.getY() < boardLength - 1) {
-                    Cell adjacentCell = findCell(cell.getX() + 1, cell.getY() + 1,unProbedCells);
-                    if (adjacentCell != null) {
-                        adjacentCells.add(adjacentCell);
-                    }
-                }
-                if (cell.getX() < boardLength - 1) {
-                    Cell adjacentCell = findCell(cell.getX() + 1, cell.getY(),unProbedCells);
-                    if (adjacentCell != null) {
-                        adjacentCells.add(adjacentCell);
-                    }
-                }
-                if (cell.getY() < boardLength - 1) {
-                    Cell adjacentCell = findCell(cell.getX(), cell.getY() + 1,unProbedCells);
-                    if (adjacentCell != null) {
-                        adjacentCells.add(adjacentCell);
-                    }
-                }
-
+                adjacentCells.addAll(getNeighbours(cell,unProbedCells));
             }
         }
         // probe all the cells in the probe cell list. Done outside the loop to prevent ConcurrentModificationException
         for (Cell adjacentCell : adjacentCells) {
-            if (!hasBeenExamined(adjacentCell)) {
                 System.out.println("Uncovering free neighbour");
                 probeCell(adjacentCell);
+        }
+    }
+
+    /**
+     * Method which returns all the neighbouring cells of a cell passed as a parameter
+     * @param cell which cell need to find neighbours
+     * @param cells find from this arraylist
+     * @return an ArrayList containing the neighbours of the parameter Cell object.
+     */
+    public ArrayList<Cell> getNeighbours(Cell cell,ArrayList<Cell> cells) {
+        ArrayList<Cell> adjacentCells = new ArrayList<>();
+        // upper left cell
+        if (cell.getX() > 0 && cell.getY() > 0) {
+            Cell adjacentCell = findCell(cell.getX() - 1, cell.getY() - 1,cells);
+            if (adjacentCell != null) {
+                adjacentCells.add(adjacentCell);
             }
         }
+        // left cell
+        if (cell.getX() > 0) {
+            Cell adjacentCell = findCell(cell.getX() - 1, cell.getY(),cells);
+            if (adjacentCell != null) {
+                adjacentCells.add(adjacentCell);
+            }
+        }
+        // upper cell
+        if (cell.getY() > 0) {
+            Cell adjacentCell = findCell(cell.getX(), cell.getY() - 1,cells);
+            if (adjacentCell != null) {
+                adjacentCells.add(adjacentCell);
+            }
+        }
+        // lower right cell
+        if (cell.getX() < boardLength - 1 && cell.getY() < boardLength - 1) {
+            Cell adjacentCell = findCell(cell.getX() + 1, cell.getY() + 1,cells);
+            if (adjacentCell != null) {
+                adjacentCells.add(adjacentCell);
+            }
+        }
+        // right cell
+        if (cell.getX() < boardLength - 1) {
+            Cell adjacentCell = findCell(cell.getX() + 1, cell.getY(),cells);
+            if (adjacentCell != null) {
+                adjacentCells.add(adjacentCell);
+            }
+        }
+        // lower cell
+        if (cell.getY() < boardLength - 1) {
+            Cell adjacentCell = findCell(cell.getX(), cell.getY() + 1,cells);
+            if (adjacentCell != null) {
+                adjacentCells.add(adjacentCell);
+            }
+        }
+
+        return adjacentCells;
+    }
+    /**
+     * If the cell contains a value 0 meaning that no adjacent cells contain tornadoes,
+     * all the neighbouring cells will also be uncovered.
+     */
+    public void freeNeighbours() {
+        while (cellsWithFreeNeighbours != 0 && !game.isGameWon()) {
+            uncoverAllClearNeighbours();
+            cellsWithFreeNeighbours--;
+        }
+    }
+
+    /**
+     * Method which returns whether a Cell object has been examined before
+     */
+    public boolean hasBeenProbed(Cell adjacentCell) {
+        for (Cell cell : probedCells) {
+            if (cell.getX() == adjacentCell.getX() && cell.getY() == adjacentCell.getY()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // TODO: 21/03/2023 findFreeCell
