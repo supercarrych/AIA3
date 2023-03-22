@@ -1,3 +1,4 @@
+import java.util.Objects;
 
 //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 github taken
 public class A3main {
@@ -23,15 +24,17 @@ public class A3main {
         System.out.println("Start!");
         Game game = new Game(world);
         Agent agent = new Agent(game);
+        //Two starting clues are given to the agent:
+        if (!Objects.equals(args[0], "P1")) {
+            agent.probeCells();
+        }
         while (!game.isGameOver()) {
-            if (verbose){
+            if (verbose) {
                 printBoard(agent.getAgentBoard());
             }
             switch (args[0]) {
                 case "P1" -> agent.orderMove();
-                case "P2" ->
-                    //TODO: Part 2
-                        System.out.println(1);
+                case "P2" -> agent.SPSMove();
                 case "P3" ->
                     //TODO: Part 3
                         System.out.println(1);
@@ -44,12 +47,16 @@ public class A3main {
             }
 
         }
-
+        if (agent.unProbedCells.size() != 0&&!args[0].equals("P1")) {
+            for (int i = 0;i<agent.unProbedCells.size();i++) {
+                agent.markCell(agent.unProbedCells.get(0));
+            }
+        }
         printBoard(agent.getAgentBoard());
 
         if (game.isGameWon()) {
             System.out.println("\nResult: Agent alive: all solved\n");
-        } else if (game.isGameOver()){
+        } else if (game.isGameOver()) {
             System.out.println("\nResult: Agent dead: found mine\n");
         } else {
             System.out.println("\nResult: Agent not terminated\n");
