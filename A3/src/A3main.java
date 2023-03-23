@@ -28,6 +28,7 @@ public class A3main {
         if (!Objects.equals(args[0], "P1")) {
             agent.probeCells();
         }
+        int index =0 ;
         while (!game.isGameOver()) {
             if (verbose) {
                 printBoard(agent.getAgentBoard());
@@ -35,9 +36,7 @@ public class A3main {
             switch (args[0]) {
                 case "P1" -> agent.orderMove();
                 case "P2" -> agent.SPSMove();
-                case "P3" ->
-                    //TODO: Part 3
-                        System.out.println(1);
+                case "P3" -> agent.makeSATMove();
                 case "P4" ->
                     //TODO: Part 4
                         System.out.println(1);
@@ -45,7 +44,13 @@ public class A3main {
                     //TODO: Part 5
                         System.out.println(1);
             }
-
+            //Agent not terminated
+            if (!game.isGameOver()&&!game.isGameWon()){
+                index++;
+            }
+            if (index==100){
+                break;
+            }
         }
         if (agent.unProbedCells.size() != 0&&!args[0].equals("P1")) {
             for (int i = 0;i<agent.unProbedCells.size();i++) {

@@ -1,9 +1,19 @@
+import org.logicng.formulas.FormulaFactory;
+import org.logicng.io.parsers.ParserException;
+import org.logicng.io.parsers.PropositionalParser;
+import org.sat4j.core.VecInt;
+import org.sat4j.minisat.SolverFactory;
+import org.sat4j.specs.ContradictionException;
+import org.sat4j.specs.ISolver;
+import org.sat4j.specs.TimeoutException;
+
+
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class Agent {
+
+    int NBCLAUSES = 1000; // number of clauses
+    int MAXVAR = 1000; //max number of variables
     // instance of Game class
     private Game game;
     // represents the agent's board view which is different from the game's board view
@@ -129,7 +139,7 @@ public class Agent {
         freeNeighbours();
     }
 
-
+/*-------sps--------*/
     /**
      * Method which picks a cell based on the single point strategy
      * scan all cells one by one
@@ -138,8 +148,6 @@ public class Agent {
     public void SPSMove() {
         //free neighbours that clue is 0
         freeNeighbours();
-
-        // TODO: 22/03/2023 check if this is a situation fo AFN or AMN
         String action = "";
         // scan all cells one by one
         Cell currentCell = unProbedCells.get(0);
@@ -331,7 +339,231 @@ public class Agent {
         return false;
     }
 
-    // TODO: 21/03/2023 findFreeCell
+    /* --------- SAT -------- */
+    /**
+     * Method which carries out the SAT move strategy. It calls the methods required to turn the knowledge base into
+     * a logical formula string, then calls the methods that encode this into CNF DIMACS and then uses the SAT4J solver
+     * to assess whether a Cell is safe to be probed.
+     */
+    public void makeSATMove() {
+        freeNeighbours();
+        ISolver solver = SolverFactory.newDefault();
+        FormulaFactory f = new FormulaFactory();
+        PropositionalParser p = new PropositionalParser(f);
+        Cell myCell = null;
+        String action = "R";
+        // Create the KB from the probed Cells
+        String kbString = convertKBU(uncoveredCells);
+        System.out.println(kbString);
+//        try {
+//            // convert the formula to a CNF DIMACS encoding
+//            int[][] dimacsClauses = CNFToDIMACS(kbString);
+//            // instantiate the solver
+//            solver.newVar(MAXVAR);
+//            solver.setExpectedNumberOfClauses(NBCLAUSES);
+//            for (int j = 0; j < dimacsClauses.length; j++) {
+//                VecInt vecInt = new VecInt(dimacsClauses[j]);
+//                // add clause to solved
+//                solver.addClause(vecInt);
+//            }
+            // for every unexamined cells check whether the possibility of it containing a tornado is satisfiable.
+            // if not then it means that the cell can be probed safely.
+//            for (Cell cell : unProbedCells) {
+//                String clause = "T" + cell.getX() + cell.getY();
+//                if (dimacsGenerator.getLiteralsHashMap().containsKey(clause)) {
+//                    int literal = dimacsGenerator.getLiteralsHashMap().get(clause);
+//                    int[] literalArray = new int[]{literal};
+//                    if (!solver.isSatisfiable(new VecInt(literalArray))) {
+//                        myCell = cell;
+//                        action = "P";
+//                        break;
+//                    }
+//                }
+//            }
+//            if (action.equals("P")) {
+//                probeCell(myCell);
+//            }
+//            else if (action.equals("R")) {
+//                System.out.println("SAT could not determine, going Random");
+//            }
+//        } catch (ContradictionException  e) {
+//            throw new RuntimeException(e);
+//        }
+    }
+
+    /**
+     * Method which takes an uncovered Cell object as a parameter, and it evaluates its surroundings in order to construct
+     * a logical formula.
+     * @param cell
+     * @return a String representing a logical formula with information about the parameter's surrounding cells.
+     */
+    public String createClause(Cell cell) {
+        // get all the neighbours of the cell
+        ArrayList<Cell> neighbours = getNeighbours(cell,allCells);
+        // contains unknown neighbours of parameter cell
+        ArrayList<Cell> unknownCells = new ArrayList<>();
+
+        // populate the markedNeighbours and unknownCells lists
+        for (Cell currentCell : neighbours) {
+          if (currentCell.getValue() == '?') {
+                unknownCells.add(currentCell);
+            }
+        }
+
+        // create the literals of each cell
+        ArrayList<String> literals = new ArrayList<>();
+        for (Cell unknownCell : unknownCells) {
+            literals.add("T" + unknownCell.getX() + unknownCell.getY());
+        }
+
+
+        // number of neighbouring tornado cells
+        int nTornadoes = Character.getNumericValue(cell.getValue());
+        // number of neighbouring cells that are unknown
+        int nUnknowns = unknownCells.size();
+        // number of neighbouring cells marked as dangers
+        int nMarked = neighbouringDangers(cell);
+
+        // get all the permutations, to be used when adding the negation
+        ArrayList<ArrayList<String>> permutedClauses = listPermutations(literals);
+        System.out.println("permutedClauses");
+        System.out.println(permutedClauses);
+        for (int i = 0; i < permutedClauses.size(); i++) {
+            ArrayList<String> currentClause = permutedClauses.get(i);
+            // nUnknowns - nTornados - nMarked is the number of free/safe cells around cell
+            // used to get all possible scenarios
+            for (int j = 0; j < nUnknowns - nTornadoes - nMarked; j++) {
+                String clause = currentClause.get(j);
+                currentClause.remove(clause);
+                clause = "~" + clause;
+                currentClause.add(0, clause);
+            }
+        }
+
+        // build the logical formula string
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < permutedClauses.size(); i++) {
+            ArrayList<String> currentClause = permutedClauses.get(i);
+            stringBuilder.append("(");
+            for (int j = 0; j < currentClause.size(); j++) {
+                String clause = currentClause.get(j);
+                stringBuilder.append(clause);
+                stringBuilder.append("&");
+            }
+            // delete trailing &
+            stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+            stringBuilder.append(")");
+            stringBuilder.append("|");
+        }
+
+        // delete trailing |
+        stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+        return stringBuilder.toString();
+
+    }
+
+    /**
+     * Method which creates permutations of strings in a list. Used to generate the encoding of the knowledge base
+     * as a string.
+     * @param list the list containing the strings to be permuted
+     * @return a list of the permutations i.e. a list containing the permutations of the list passed as a parameter
+     */
+    public ArrayList<ArrayList<String>> listPermutations(ArrayList<String> list) {
+
+        if (list.size() == 0) {
+            ArrayList<ArrayList<String>> result = new ArrayList<>();
+            result.add(new ArrayList<>());
+            return result;
+        }
+
+        ArrayList<ArrayList<String>> returnList = new ArrayList<>();
+
+        String firstElement = list.remove(0);
+
+        ArrayList<ArrayList<String>> recursiveReturn = listPermutations(list);
+        for (ArrayList<String> li : recursiveReturn) {
+            for (int index = 0; index <= li.size(); index++) {
+                ArrayList<String> temp = new ArrayList<>(li);
+                temp.add(index, firstElement);
+                returnList.add(temp);
+            }
+
+        }
+        return returnList;
+    }
+
+
+    /**
+     * Method which taked all uncoveredCells as a parameter, and created a logical formula with all the possibilities
+     * of where tornados could possibly be.
+     * @param uncoveredCells cells that have been uncovered i.e. probed
+     * @return a String representation of the knowledge base.
+     */
+    public String convertKBU(ArrayList<Cell> uncoveredCells) {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < uncoveredCells.size(); i++) {
+            Cell cell = uncoveredCells.get(i);
+            if (neighbouringUnknowns(cell) > 0) {
+                // for each cell, get a single clause
+                String clause = createClause(cell);
+                if (!Objects.equals(clause, "")) {
+                    stringBuilder.append("(");
+                    stringBuilder.append(clause);
+                    stringBuilder.append(")");
+                    stringBuilder.append("&");
+                }
+            }
+        }
+        if (stringBuilder.length() > 0) {
+            stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+        }
+
+        return stringBuilder.toString();
+    }
+
+
+
+
+    /**
+     * takes a String representation of a CNF formula and returns a 2D int array in DIMACS format
+     */
+    private int[][] CNFToDIMACS(String cnf) {
+        // Split the CNF string into clauses
+        String[] clauses = cnf.split("\\s*&\\s*");
+
+        // Determine the maximum variable ID
+        int maxVar = 0;
+        for (String clause : clauses) {
+            String[] literals = clause.split("\\s*\\|\\s*");
+            for (String literal : literals) {
+                int var = Math.abs(Integer.parseInt(literal));
+                if (var > maxVar) {
+                    maxVar = var;
+                }
+            }
+        }
+
+        // Initialize the DIMACS array
+        int[][] dimacs = new int[clauses.length][];
+
+        // Convert each clause to DIMACS format
+        for (int i = 0; i < clauses.length; i++) {
+            String[] literals = clauses[i].split("\\s*\\|\\s*");
+            int[] clause = new int[literals.length];
+            for (int j = 0; j < literals.length; j++) {
+                int var = Integer.parseInt(literals[j]);
+                if (var < 0) {
+                    clause[j] = -(Math.abs(var) + maxVar);
+                } else {
+                    clause[j] = var;
+                }
+            }
+            dimacs[i] = clause;
+        }
+
+        return dimacs;
+        }
+
 
 
 }
