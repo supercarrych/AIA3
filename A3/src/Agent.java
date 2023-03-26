@@ -64,8 +64,6 @@ public class Agent {
         probeCell(cell);
         cell = findCell(boardLength / 2, boardLength / 2, allCells);
         probeCell(cell);
-        System.out.println("Agent board view at t1");
-        A3main.printBoard(agentBoard);
     }
 
     /**
@@ -233,7 +231,7 @@ public class Agent {
         probedCells.add(cell);
         unProbedCells.remove(cell);
         agentBoard[cell.getY()][cell.getX()] = cell.getValue();
-        System.out.println("mark " + cell.toString());
+        System.out.println("mark " + cell);
         System.out.println();
     }
 
@@ -536,10 +534,52 @@ public class Agent {
         PropositionalParser p = new PropositionalParser(f);
         Cell currentCell = unProbedCells.get(0);
         // Create the KB from the probed Cells
-        String kbString = convertKBU(uncoveredCells,"CNF");
+        String kbString = convertKBU(uncoveredCells, "CNF");
         System.out.println(kbString);
-    }
+        StringBuilder kbStringBuilder = new StringBuilder(kbString);
+        try {
+            Tristate result;
+            //determine whether there are clue cell around the current cell
+            if (!kbStringBuilder.toString().equals("")) {
+                //for every unProbed cells check whether the possibility of it containing a tornado is satisfiable.
+                // if not then the cell can be probed safely.
+                String clause = "T" + currentCell.getX() + currentCell.getY();
+                if (!kbStringBuilder.toString().contains(clause)) {
+                    result = Tristate.UNDEF;
+                } else {
+                    kbStringBuilder.append("&");
+                    kbStringBuilder.append("(");
+                    kbStringBuilder.append("~");
+                    kbStringBuilder.append(clause);
+                    kbStringBuilder.append(")");
 
+
+                    // parse the String representing the knowledge base into a logical formula
+                    System.out.println("kbStringBuilder");
+                    System.out.println(kbStringBuilder);
+
+                    Formula formula = p.parse(kbStringBuilder.toString());
+
+                    // instantiate the solver
+                    SATSolver miniSat = MiniSat.miniSat(f);
+                    miniSat.add(formula);
+                    result = miniSat.sat();
+                }
+                System.out.println(result);
+                if (result == Tristate.FALSE) {
+                    markCell(currentCell);
+                } else if (result == Tristate.TRUE){
+                    probeCell(currentCell);
+                }else {
+                    unProbedCells.remove(currentCell);
+                    unProbedCells.add(currentCell);
+                }
+            }
+
+        } catch (ParserException e) {
+            throw new RuntimeException(e);
+        }
+    }
     private String createCNFClause(Cell cell) {
         // get all the neighbours of the cell
         ArrayList<Cell> neighbours = getNeighbours(cell, allCells);
@@ -552,13 +592,11 @@ public class Agent {
                 unknownCells.add(currentCell);
             }
         }
-
         // create the literals of each cell
         ArrayList<String> literals = new ArrayList<>();
         for (Cell unknownCell : unknownCells) {
             literals.add("T" + unknownCell.getX() + unknownCell.getY());
         }
-
         // number of neighbouring tornado cells
         int nTornadoes = Character.getNumericValue(cell.getValue());
         // number of neighbouring cells that are unknown
@@ -568,11 +606,15 @@ public class Agent {
 
         // build the logical formula string
         StringBuilder stringBuilder = new StringBuilder();
-        // at most n danger
-        ArrayList<ArrayList<String>> Clauses = encodeAtMostK(literals,nTornadoes);
+        // at most n is danger : cardinal = nTornadoes-nMarked+1
+        System.out.println("atmost");
+        System.out.println(literals);
+        System.out.println(nTornadoes-nMarked+1);
+        ArrayList<ArrayList<String>> clauses = encodeAtMost(literals,nTornadoes-nMarked+1);
+
         System.out.println("Clauses1");
-        System.out.println(Clauses);
-        for (ArrayList<String> currentClause : Clauses) {
+        System.out.println(clauses);
+        for (ArrayList<String> currentClause : clauses) {
             // used to get all possible scenarios
             for (int j = 0; j <currentClause.size(); j++) {
                 String clause = currentClause.get(j);
@@ -582,10 +624,16 @@ public class Agent {
             }
         }
 
-        // at least n danger
-        Clauses.add(literals);
+        // at least n is danger : cardinal = nUnknowns-(nTornadoes-nMarked)+1 at most ?-n is no danger
+        ArrayList<ArrayList<String>> clauses2 = encodeAtMost(literals,nUnknowns-(nTornadoes-nMarked)+1);
 
-        for (ArrayList<String> currentClause : Clauses) {
+        System.out.println("clauses2");
+        System.out.println(clauses2);
+        System.out.println(clauses2.size());
+        clauses2 .addAll(clauses);
+        System.out.println(clauses2);
+
+        for (ArrayList<String> currentClause : clauses2) {
             stringBuilder.append("(");
             for (String clause : currentClause) {
                 stringBuilder.append(clause);
@@ -602,13 +650,32 @@ public class Agent {
 
     }
 
-    public static ArrayList<ArrayList<String>> encodeAtMostK(ArrayList<String> variables, int k) {
-        ArrayList<ArrayList<String>> clauses = new ArrayList<>();
-        
 
+    public static ArrayList<ArrayList<String>> encodeAtMost(ArrayList<String> literals, int k) {
+        ArrayList<ArrayList<String>> result = new ArrayList<>();
+        int n = literals.size();
+        // If k is greater than n or k is 0, return an empty list
+        if ( k == 0) {
+            result.add(new ArrayList<>());
+            return result;
+        }else if (k>n){
+            return result;
+        }else {
+            // Recursive case: generate all subsets of size k-1 and add the current element
+            String first = literals.get(0);
+            ArrayList<String> rest = new ArrayList<String>(literals.subList(1, literals.size()));
+            ArrayList<ArrayList<String>> subResult1 = encodeAtMost(rest, k - 1);
+            ArrayList<ArrayList<String>> subResult2 = encodeAtMost(rest, k);
 
-        return clauses;
+            for (ArrayList<String> sub : subResult1) {
+                sub.add(0, first);
+                result.add(sub);
+            }
+            result.addAll(subResult2);
+            return result;
+        }
     }
+
 
 
 //    /**
