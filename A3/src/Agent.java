@@ -7,31 +7,29 @@ import org.logicng.solvers.MiniSat;
 import org.logicng.solvers.SATSolver;
 import org.sat4j.minisat.SolverFactory;
 import org.sat4j.specs.ISolver;
-
 import java.util.ArrayList;
 import java.util.Objects;
 
 public class Agent {
-
     int NBCLAUSES = 1000; // number of clauses
     int MAXVAR = 1000; //max number of variables
     // instance of Game class
-    private Game game;
+    private final Game game;
     // represents the agent's board view which is different from the game's board view
-    private char[][] agentBoard;
+    private final char[][] agentBoard;
     // knowledge base
     // store all cells
-    private ArrayList<Cell> allCells;
+    private final ArrayList<Cell> allCells;
     // list store all the unProbed cells of the board
     public ArrayList<Cell> unProbedCells;
     // list store all the probe cells of the board. A cell marked as a danger/tornado is also considered probed
-    private ArrayList<Cell> probedCells;
+    private final ArrayList<Cell> probedCells;
     // list store all the uncovered cells of the board
-    private ArrayList<Cell> uncoveredCells;
+    private final ArrayList<Cell> uncoveredCells;
     // list store all the cells marked as tornado cells
-    private ArrayList<Cell> tornadoCells;
+    private final ArrayList<Cell> tornadoCells;
     // store the length of the board
-    private int boardLength;
+    private final int boardLength;
     // holds the number of Cells with a value of 0 whose neighbours have not been probed yet.
     private int cellsWithFreeNeighbours;
     // used for parsing the string representation of the knowledge base into a logical formula
@@ -329,32 +327,21 @@ public class Agent {
         }
     }
 
-    /**
-     * Method which returns whether a Cell object has been examined before
-     */
-    public boolean hasBeenProbed(Cell adjacentCell) {
-        for (Cell cell : probedCells) {
-            if (cell.getX() == adjacentCell.getX() && cell.getY() == adjacentCell.getY()) {
-                return true;
-            }
-        }
-        return false;
-    }
 
-    /* --------- SAT -------- */
+    /* --------- DNF -------- */
 
     /**
      * Method which carries out the SAT move strategy. It calls the methods required to turn the knowledge base into
-     * a logical formula string, then calls the methods that encode this into CNF DIMACS and then uses the SAT4J solver
+     * a logical formula string, then calls the methods that encode this into DNF DIMACS and then uses the LogicNG solver
      * to assess whether a Cell is safe to be probed.
      */
-    public void makeSATMove() {
+    public void makeDNFMove() {
         freeNeighbours();
         FormulaFactory f = new FormulaFactory();
         PropositionalParser p = new PropositionalParser(f);
         Cell currentCell = unProbedCells.get(0);
         // Create the KB from the probed Cells
-        String kbString = convertKBU(uncoveredCells);
+        String kbString = convertKBU(uncoveredCells,"DNF");
         System.out.println(kbString);
         StringBuilder kbStringBuilder = new StringBuilder(kbString);
         try {
@@ -406,7 +393,6 @@ public class Agent {
      * Method which takes an uncovered Cell object as a parameter, and it evaluates its surroundings in order to construct
      * a logical formula.
      *
-     * @param cell
      * @return a String representing a logical formula with information about the parameter's surrounding cells.
      */
     public String createDNFClause(Cell cell) {
@@ -428,7 +414,6 @@ public class Agent {
             literals.add("T" + unknownCell.getX() + unknownCell.getY());
         }
 
-
         // number of neighbouring tornado cells
         int nTornadoes = Character.getNumericValue(cell.getValue());
         // number of neighbouring cells that are unknown
@@ -436,49 +421,35 @@ public class Agent {
         // number of neighbouring cells marked as dangers
         int nMarked = neighbouringDangers(cell);
 
-
         // build the logical formula string
         StringBuilder stringBuilder = new StringBuilder();
         // get all the permutations, to be used when adding the negation
-
             ArrayList<ArrayList<String>> permutedClauses = listPermutations(literals);
-
             System.out.println("permutedClauses");
             System.out.println(permutedClauses);
-            for (int i = 0; i < permutedClauses.size(); i++) {
-                ArrayList<String> currentClause = permutedClauses.get(i);
-                // nUnknowns - nTornados - nMarked is the number of free/safe cells around cell
-                // used to get all possible scenarios
-                for (int j = 0; j < nUnknowns - (nTornadoes - nMarked); j++) {
-                    String clause = currentClause.get(j);
-                    currentClause.remove(clause);
-                    clause = "~" + clause;
-                    currentClause.add(0, clause);
-                }
+        for (ArrayList<String> currentClause : permutedClauses) {
+            // nUnknowns - nTornados - nMarked is the number of free/safe cells around cell
+            // used to get all possible scenarios
+            for (int j = 0; j < nUnknowns - (nTornadoes - nMarked); j++) {
+                String clause = currentClause.get(j);
+                currentClause.remove(clause);
+                clause = "~" + clause;
+                currentClause.add(0, clause);
             }
-
-
-            for (int i = 0; i < permutedClauses.size(); i++) {
-                ArrayList<String> currentClause = permutedClauses.get(i);
-                stringBuilder.append("(");
-                for (int j = 0; j < currentClause.size(); j++) {
-                    String clause = currentClause.get(j);
-                    stringBuilder.append(clause);
-                    stringBuilder.append("&");
-                }
-                // delete trailing &
-                stringBuilder.deleteCharAt(stringBuilder.length() - 1);
-                stringBuilder.append(")");
-                stringBuilder.append("|");
+        }
+        for (ArrayList<String> currentClause : permutedClauses) {
+            stringBuilder.append("(");
+            for (String clause : currentClause) {
+                stringBuilder.append(clause);
+                stringBuilder.append("&");
             }
-
+            // delete trailing &
+            stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+            stringBuilder.append(")");
+            stringBuilder.append("|");
+        }
             // delete trailing |
             stringBuilder.deleteCharAt(stringBuilder.length() - 1);
-
-
-
-
-
         return stringBuilder.toString();
 
     }
@@ -524,15 +495,20 @@ public class Agent {
      * @param uncoveredCells cells that have been uncovered i.e. probed
      * @return a String representation of the knowledge base.
      */
-    public String convertKBU(ArrayList<Cell> uncoveredCells) {
+    public String convertKBU(ArrayList<Cell> uncoveredCells,String form) {
         StringBuilder stringBuilder = new StringBuilder();
-        for (int i = 0; i < uncoveredCells.size(); i++) {
-            Cell cell = uncoveredCells.get(i);
+        for (Cell cell : uncoveredCells) {
+
             if (neighbouringUnknowns(cell) > 0) {
                 // for each cell, get a single clause
                 System.out.println("uncoveredCell");
                 System.out.println(cell);
-                String clause = createDNFClause(cell);
+                String clause = "";
+                if (form.equals("DNF")){
+                     clause = createDNFClause(cell);
+                }else {
+                     clause = createCNFClause(cell);
+                }
                 if (!Objects.equals(clause, "")) {
                     stringBuilder.append("(");
                     stringBuilder.append(clause);
@@ -540,12 +516,98 @@ public class Agent {
                     stringBuilder.append("&");
                 }
             }
+
         }
+
+        //delete last &
         if (stringBuilder.length() > 0) {
             stringBuilder.deleteCharAt(stringBuilder.length() - 1);
         }
 
         return stringBuilder.toString();
+    }
+
+
+
+    /*-----------CNF ---------*/
+    public void makeCNFMove() {
+        freeNeighbours();
+        FormulaFactory f = new FormulaFactory();
+        PropositionalParser p = new PropositionalParser(f);
+        Cell currentCell = unProbedCells.get(0);
+        // Create the KB from the probed Cells
+        String kbString = convertKBU(uncoveredCells,"CNF");
+        System.out.println(kbString);
+    }
+
+    private String createCNFClause(Cell cell) {
+        // get all the neighbours of the cell
+        ArrayList<Cell> neighbours = getNeighbours(cell, allCells);
+        // contains unknown neighbours of parameter cell
+        ArrayList<Cell> unknownCells = new ArrayList<>();
+
+        // populate the markedNeighbours and unknownCells lists
+        for (Cell currentCell : neighbours) {
+            if (currentCell.getValue() == '?') {
+                unknownCells.add(currentCell);
+            }
+        }
+
+        // create the literals of each cell
+        ArrayList<String> literals = new ArrayList<>();
+        for (Cell unknownCell : unknownCells) {
+            literals.add("T" + unknownCell.getX() + unknownCell.getY());
+        }
+
+        // number of neighbouring tornado cells
+        int nTornadoes = Character.getNumericValue(cell.getValue());
+        // number of neighbouring cells that are unknown
+        int nUnknowns = unknownCells.size();
+        // number of neighbouring cells marked as dangers
+        int nMarked = neighbouringDangers(cell);
+
+        // build the logical formula string
+        StringBuilder stringBuilder = new StringBuilder();
+        // at most n danger
+        ArrayList<ArrayList<String>> Clauses = encodeAtMostK(literals,nTornadoes);
+        System.out.println("Clauses1");
+        System.out.println(Clauses);
+        for (ArrayList<String> currentClause : Clauses) {
+            // used to get all possible scenarios
+            for (int j = 0; j <currentClause.size(); j++) {
+                String clause = currentClause.get(j);
+                currentClause.remove(clause);
+                clause = "~" + clause;
+                currentClause.add(0, clause);
+            }
+        }
+
+        // at least n danger
+        Clauses.add(literals);
+
+        for (ArrayList<String> currentClause : Clauses) {
+            stringBuilder.append("(");
+            for (String clause : currentClause) {
+                stringBuilder.append(clause);
+                stringBuilder.append("|");
+            }
+            // delete last |
+            stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+            stringBuilder.append(")");
+            stringBuilder.append("&");
+        }
+        // delete last &
+        stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+        return stringBuilder.toString();
+
+    }
+
+    public static ArrayList<ArrayList<String>> encodeAtMostK(ArrayList<String> variables, int k) {
+        ArrayList<ArrayList<String>> clauses = new ArrayList<>();
+        
+
+
+        return clauses;
     }
 
 

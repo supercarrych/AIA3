@@ -36,10 +36,8 @@ public class A3main {
             switch (args[0]) {
                 case "P1" -> agent.orderMove();
                 case "P2" -> agent.SPSMove();
-                case "P3" -> agent.makeSATMove();
-                case "P4" ->
-                    //TODO: Part 4
-                        System.out.println(1);
+                case "P3" -> agent.makeDNFMove();
+                case "P4" -> agent.makeCNFMove();
                 case "P5" ->
                     //TODO: Part 5
                         System.out.println(1);
