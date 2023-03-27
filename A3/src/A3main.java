@@ -3,6 +3,70 @@ import java.util.Objects;
 //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 github taken
 public class A3main {
 
+    /**
+     * Method which sets up the Game and Agent instance required for the game to be played
+     * @param agentType i.e. RPX, SPX or SAT
+     * @param worldName e.g. S2, M7, L3
+     * @return returns a String with either 'game won' or 'game lost' indicating whether the agent has won or lost
+     * the game.
+     */
+    public static String play(String agentType, String worldName){
+        World world = World.valueOf(worldName);
+        char[][] p = world.map;
+        printBoard(p);
+        System.out.println("Start!");
+        Game game = new Game(world);
+        Agent agent = new Agent(game);
+        //Two starting clues are given to the agent:
+        if (!Objects.equals(agentType, "P1")) {
+            agent.probeCells();
+        }
+        int index = 0;
+        while (!game.isGameOver()) {
+
+            switch (agentType) {
+                case "P1" -> agent.orderMove();
+                case "P2" -> agent.SPSMove();
+                case "P3" -> agent.makeDNFMove();
+                case "P4" -> agent.makeCNFMove();
+                case "P5" ->
+                    //TODO: Part 5
+                        System.out.println(2);
+            }
+            //Agent not terminated
+            if (!game.isGameOver() && !game.isGameWon()) {
+                index++;
+            }
+            if (index == 100) {
+                break;
+            }
+        }
+        if (agent.unProbedCells.size() != 0 && !agentType.equals("P1")) {
+            if (game.isGameWon()) {
+                int length = agent.unProbedCells.size();
+                for (int i = 0; i < length; i++) {
+                    if (agentType.equals("P3")) {
+                        agent.makeDNFMove();
+                    } else {
+                        agent.makeCNFMove();
+                    }
+
+                }
+            }
+        }
+        String result = "";
+        System.out.println("Final map");
+        printBoard(agent.getAgentBoard());
+        if (game.isGameWon()) {
+            result = "won";
+        } else if (game.isGameOver()) {
+            result = "mine";
+        } else {
+            result = "T";
+        }
+        return result;
+    }
+
     public static void main(String[] args) {
 
         boolean verbose = args.length > 2 && args[2].equals("verbose"); //prints the formulas for SAT if true

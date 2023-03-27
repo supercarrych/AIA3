@@ -25,8 +25,6 @@ public class DIMACS {
         Formula cnf = formula.cnf();
         // encode the literals into integers
         encodeLiterals(cnf.literals());
-        // System.out.printlnln("cnf");
-        // System.out.printlnln(cnf);
         int cnfNumber =0;
         for (Formula value : cnf) {
             clauses.add(getClause(value));
@@ -41,8 +39,8 @@ public class DIMACS {
             int[] singleClause = clauses.get(i);
             clausesArray[i] = singleClause;
         }
-        // System.out.printlnln("clausesArray");
-        // System.out.printlnln(Arrays.deepToString(clausesArray));
+        // System.out.println("clausesArray");
+        // System.out.println(Arrays.deepToString(clausesArray));
         return clausesArray;
     }
 
