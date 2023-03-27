@@ -46,13 +46,12 @@ public class Game {
      * @return Cell object uncovered containing details about coordinates and value
      */
     public Cell uncoverCell(int x, int y) {
-        for (int i = 0; i < allCells.size(); i++) {
-            if (allCells.get(i).getX() == x && allCells.get(i).getY() == y) {
-                Cell cell = allCells.get(i);
+        for (Cell allCell : allCells) {
+            if (allCell.getX() == x && allCell.getY() == y) {
                 // remove cell from list holding the covered cells
-                coveredCells.remove(cell);
+                coveredCells.remove(allCell);
                 // if the cell uncovered is a tornado, game is over
-                if (cell.getValue() == 't') {
+                if (allCell.getValue() == 't') {
                     gameOver = true;
                 }
                 // if checkGameWon returns true
@@ -60,7 +59,7 @@ public class Game {
                     gameOver = true;
                     gameWon = true;
                 }
-                return cell;
+                return allCell;
             }
         }
         // cell has already been uncovered, return null
@@ -77,8 +76,7 @@ public class Game {
             return true;
         }
         else {
-            for (int i = 0; i < coveredCells.size(); i++) {
-                Cell cell = coveredCells.get(i);
+            for (Cell cell : coveredCells) {
                 // If all but tornadoes cells are probed without a game over, the agent wins the game.
                 if (board[cell.getY()][cell.getX()] != 't') {
                     return false;

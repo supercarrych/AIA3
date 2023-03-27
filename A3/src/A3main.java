@@ -26,7 +26,7 @@ public class A3main {
         if (!Objects.equals(args[0], "P1")) {
             agent.probeCells();
         }
-        int index =0 ;
+        int index = 0;
         while (!game.isGameOver()) {
             if (verbose) {
                 printBoard(agent.getAgentBoard());
@@ -38,26 +38,30 @@ public class A3main {
                 case "P4" -> agent.makeCNFMove();
                 case "P5" ->
                     //TODO: Part 5
-                        System.out.println(1);
+                        System.out.println(2);
             }
             //Agent not terminated
-            if (!game.isGameOver()&&!game.isGameWon()){
+            if (!game.isGameOver() && !game.isGameWon()) {
                 index++;
             }
-            if (index==100){
+            if (index == 100) {
                 break;
             }
         }
-        if (agent.unProbedCells.size() != 0&&!args[0].equals("P1")) {
-            if (game.isGameWon()){
-                System.out.println("agent.unProbedCells");
-                System.out.println(agent.unProbedCells.size());
+        if (agent.unProbedCells.size() != 0 && !args[0].equals("P1")) {
+            if (game.isGameWon()) {
                 int length = agent.unProbedCells.size();
-                for (int i = 0;i<length;i++) {
-                    agent.makeDNFMove();
+                for (int i = 0; i < length; i++) {
+                    if (args[0].equals("P3")) {
+                        agent.makeDNFMove();
+                    } else {
+                        agent.makeCNFMove();
+                    }
+
                 }
             }
         }
+        System.out.println("Final map");
         printBoard(agent.getAgentBoard());
 
         if (game.isGameWon()) {

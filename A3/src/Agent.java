@@ -5,8 +5,14 @@ import org.logicng.io.parsers.ParserException;
 import org.logicng.io.parsers.PropositionalParser;
 import org.logicng.solvers.MiniSat;
 import org.logicng.solvers.SATSolver;
+import org.sat4j.core.VecInt;
+import org.sat4j.minisat.SolverFactory;
+import org.sat4j.specs.ContradictionException;
+import org.sat4j.specs.ISolver;
+import org.sat4j.specs.TimeoutException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Objects;
 
 public class Agent {
@@ -58,7 +64,7 @@ public class Agent {
      * and the cell in the centre of the board at the start of the game
      */
     public void probeCells() {
-        System.out.println("Probing cells");
+        // System.out.printlnln("Probing cells");
         Cell cell = findCell(0, 0, allCells);
         probeCell(cell);
         cell = findCell(boardLength / 2, boardLength / 2, allCells);
@@ -82,16 +88,16 @@ public class Agent {
         agentBoard[cell.getY()][cell.getX()] = cell.getValue();
         if (cell.getValue() == 't') {
             agentBoard[cell.getY()][cell.getX()] = '-';
-            System.out.println("tornado " + cell);
+            // System.out.printlnln("tornado " + cell);
         }
         // if the value is 0, increment free neighbours. Tells program that there are free neighbours to be probed
         else if (cell.getValue() == '0') {
             cellsWithFreeNeighbours++;
-            System.out.println("probe " + cell);
+            // System.out.printlnln("probe " + cell);
         } else {
-            System.out.println("probe " + cell);
+            // System.out.printlnln("probe " + cell);
         }
-        //System.out.println();
+        //// System.out.printlnln();
     }
 
     /**
@@ -152,10 +158,10 @@ public class Agent {
         // for each cell that is covered check its adjacent neighbours
         action = checkAFNorAMN(currentCell);
         if (action.equals("AFN")) {
-            System.out.println("AFN found, probing");
+            // System.out.printlnln("AFN found, probing");
             probeCell(currentCell);
         } else if (action.equals("AMN")) {
-            System.out.println("AMN found, marking");
+            // System.out.printlnln("AMN found, marking");
             markCell(currentCell);
         } else {
             //do noting
@@ -172,9 +178,9 @@ public class Agent {
      */
     private String checkAFNorAMN(Cell cell) {
         ArrayList<Cell> adjacentCells = getNeighbours(cell, allCells);
-        System.out.println(adjacentCells);
+        // System.out.printlnln(adjacentCells);
         for (Cell adjacentCell : adjacentCells) {
-            System.out.println("check" + adjacentCell);
+            // System.out.printlnln("check" + adjacentCell);
             //only if they are uncovered and not marked dangers
             if (adjacentCell.getValue() != '?' && adjacentCell.getValue() != '*') {
                 // AFN situation is true if the number of dangers already marked cells around cell equals clue
@@ -230,8 +236,8 @@ public class Agent {
         probedCells.add(cell);
         unProbedCells.remove(cell);
         agentBoard[cell.getY()][cell.getX()] = cell.getValue();
-        System.out.println("mark " + cell);
-        System.out.println();
+        // System.out.printlnln("mark " + cell);
+        // System.out.printlnln();
     }
 
 
@@ -249,7 +255,7 @@ public class Agent {
         }
         // probe all the cells in the probe cell list. Done outside the loop to prevent ConcurrentModificationException
         for (Cell adjacentCell : adjacentCells) {
-            System.out.println("Uncovering free neighbour");
+            // System.out.printlnln("Uncovering free neighbour");
             probeCell(adjacentCell);
         }
     }
@@ -335,11 +341,11 @@ public class Agent {
     public void makeDNFMove() {
         freeNeighbours();
         Cell currentCell = unProbedCells.get(0);
-        System.out.println(unProbedCells);
+        // System.out.printlnln(unProbedCells);
         // Create the KB from the probed Cells
         String kbString = convertKBU(uncoveredCells, "DNF");
-        System.out.println(kbString);
-        satSolver(kbString,currentCell);
+        // System.out.printlnln(kbString);
+        satSolver(kbString, currentCell);
     }
 
     /**
@@ -370,8 +376,8 @@ public class Agent {
                 kbClear.append(clause);
                 kbClear.append(")");
 
-                System.out.println(kbDanger);
-                System.out.println(kbClear);
+                // System.out.printlnln(kbDanger);
+                // System.out.printlnln(kbClear);
 
                 // parse the String representing the knowledge base into a logical formula
                 Formula formula1 = p.parse(kbDanger.toString());
@@ -385,8 +391,8 @@ public class Agent {
                 miniSat2.add(formula2);
                 resultClear = miniSat2.sat();
 
-                System.out.println(resultDanger);
-                System.out.println(resultClear);
+                // System.out.printlnln(resultDanger);
+                // System.out.printlnln(resultClear);
             }
 
             if (resultDanger == Tristate.FALSE) {
@@ -438,8 +444,8 @@ public class Agent {
         StringBuilder stringBuilder = new StringBuilder();
         // get all the permutations, to be used when adding the negation
         ArrayList<ArrayList<String>> permutedClauses = listPermutations(literals);
-        System.out.println("permutedClauses");
-        System.out.println(permutedClauses);
+        // System.out.printlnln("permutedClauses");
+        // System.out.printlnln(permutedClauses);
         for (ArrayList<String> currentClause : permutedClauses) {
             // nUnknowns - nTornados - nMarked is the number of free/safe cells around cell
             // used to get all possible scenarios
@@ -487,8 +493,8 @@ public class Agent {
         String firstElement = list.remove(0);
 
         ArrayList<ArrayList<String>> recursiveReturn = listPermutations(list);
-        System.out.println("recursiveReturn");
-        System.out.println(recursiveReturn);
+        // System.out.printlnln("recursiveReturn");
+        // System.out.printlnln(recursiveReturn);
         for (ArrayList<String> li : recursiveReturn) {
             for (int index = 0; index <= li.size(); index++) {
                 ArrayList<String> temp = new ArrayList<>(li);
@@ -514,8 +520,8 @@ public class Agent {
 
             if (neighbouringUnknowns(cell) > 0) {
                 // for each cell, get a single clause
-                System.out.println("uncoveredCell");
-                System.out.println(cell);
+                // System.out.printlnln("uncoveredCell");
+                // System.out.printlnln(cell);
                 String clause = "";
                 if (form.equals("DNF")) {
                     clause = createDNFClause(cell);
@@ -544,14 +550,55 @@ public class Agent {
     /*-----------CNF ---------*/
     public void makeCNFMove() {
         freeNeighbours();
+        ISolver solver;
         FormulaFactory f = new FormulaFactory();
         PropositionalParser p = new PropositionalParser(f);
         Cell currentCell = unProbedCells.get(0);
         // Create the KB from the probed Cells
         String kbString = convertKBU(uncoveredCells, "CNF");
-        System.out.println(kbString);
+        // System.out.printlnln("kbString");
+        // System.out.printlnln(kbString);
+        DIMACS dimacs = new DIMACS();
+        try {
+            Formula formula = p.parse(kbString);
+            int[][] DIMACSClauses = dimacs.convertToDIMACS(formula);
+            // System.out.printlnln(Arrays.deepToString(DIMACSClauses));
+            // instantiate the solver
+            solver = SolverFactory.newDefault();
+            solver.newVar(MAXVAR);
+            solver.setExpectedNumberOfClauses(NBCLAUSES);
+            for (int[] dimacsClause : DIMACSClauses) {
+                // add clause to solved
+                solver.addClause(new VecInt(dimacsClause));
+            }
+            // for every unexamined cells check whether the possibility of it containing a tornado is satisfiable.
+            // if not then it means that the cell can be probed safely.
+            int[] Danger = new int[0];
+            int[] clear = new int[0];
+            String clause = "T" + currentCell.getX() + currentCell.getY();
+            if (dimacs.getLiteralsHashMap().containsKey(clause)) {
+                int literal = dimacs.getLiteralsHashMap().get(clause);
+                // System.out.printlnln("literal");
+                // System.out.printlnln(literal);
+                Danger = new int[]{-literal};
+                clear = new int[]{literal};
 
-        satSolver(kbString,currentCell);
+            }
+            // System.out.printlnln(solver.isSatisfiable(new VecInt(Danger)));
+            // System.out.printlnln(solver.isSatisfiable(new VecInt(clear)));
+            if (!solver.isSatisfiable(new VecInt(Danger))) {
+                markCell(currentCell);
+            } else if (!solver.isSatisfiable(new VecInt(clear))) {
+                probeCell(currentCell);
+            } else {
+                unProbedCells.remove(currentCell);
+                unProbedCells.add(currentCell);
+            }
+
+        } catch (ParserException | ContradictionException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     private String createCNFClause(Cell cell) {
@@ -581,13 +628,13 @@ public class Agent {
         // build the logical formula string
         StringBuilder stringBuilder = new StringBuilder();
         // at most n is danger : cardinal = nTornadoes-nMarked+1
-        System.out.println("atmost");
-        System.out.println(literals);
-        System.out.println(nTornadoes - nMarked + 1);
+        // System.out.printlnln("atmost");
+        // System.out.printlnln(literals);
+        // System.out.printlnln(nTornadoes - nMarked + 1);
         ArrayList<ArrayList<String>> clauses = encodeAtMost(literals, nTornadoes - nMarked + 1);
 
-        System.out.println("Clauses1");
-        System.out.println(clauses);
+        // System.out.printlnln("Clauses1");
+        // System.out.printlnln(clauses);
         for (ArrayList<String> currentClause : clauses) {
             // used to get all possible scenarios
             for (int j = 0; j < currentClause.size(); j++) {
@@ -601,11 +648,11 @@ public class Agent {
         // at least n is danger : cardinal = nUnknowns-(nTornadoes-nMarked)+1 at most ?-n is no danger
         ArrayList<ArrayList<String>> clauses2 = encodeAtMost(literals, nUnknowns - (nTornadoes - nMarked) + 1);
 
-        System.out.println("clauses2");
-        System.out.println(clauses2);
-        System.out.println(clauses2.size());
+        // System.out.printlnln("clauses2");
+        // System.out.printlnln(clauses2);
+        // System.out.printlnln(clauses2.size());
         clauses2.addAll(clauses);
-        System.out.println(clauses2);
+        // System.out.printlnln(clauses2);
 
         for (ArrayList<String> currentClause : clauses2) {
             stringBuilder.append("(");
@@ -637,7 +684,7 @@ public class Agent {
         } else {
             // Recursive case: generate all subsets of size k-1 and add the current element
             String first = literals.get(0);
-            ArrayList<String> rest = new ArrayList<String>(literals.subList(1, literals.size()));
+            ArrayList<String> rest = new ArrayList<>(literals.subList(1, literals.size()));
             ArrayList<ArrayList<String>> subResult1 = encodeAtMost(rest, k - 1);
             ArrayList<ArrayList<String>> subResult2 = encodeAtMost(rest, k);
 
@@ -649,47 +696,5 @@ public class Agent {
             return result;
         }
     }
-
-
-//    /**
-//     * takes a String representation of a CNF formula and returns a 2D int array in DIMACS format
-//     */
-//    private int[][] CNFToDIMACS(String cnf) {
-//        // Split the CNF string into clauses
-//        String[] clauses = cnf.split("\\s*&\\s*");
-//
-//        // Determine the maximum variable ID
-//        int maxVar = 0;
-//        for (String clause : clauses) {
-//            String[] literals = clause.split("\\s*\\|\\s*");
-//            for (String literal : literals) {
-//                int var = Math.abs(Integer.parseInt(literal));
-//                if (var > maxVar) {
-//                    maxVar = var;
-//                }
-//            }
-//        }
-//
-//        // Initialize the DIMACS array
-//        int[][] dimacs = new int[clauses.length][];
-//
-//        // Convert each clause to DIMACS format
-//        for (int i = 0; i < clauses.length; i++) {
-//            String[] literals = clauses[i].split("\\s*\\|\\s*");
-//            int[] clause = new int[literals.length];
-//            for (int j = 0; j < literals.length; j++) {
-//                int var = Integer.parseInt(literals[j]);
-//                if (var < 0) {
-//                    clause[j] = -(Math.abs(var) + maxVar);
-//                } else {
-//                    clause[j] = var;
-//                }
-//            }
-//            dimacs[i] = clause;
-//        }
-//
-//        return dimacs;
-//        }
-
 
 }
