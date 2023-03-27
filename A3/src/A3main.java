@@ -5,10 +5,8 @@ public class A3main {
 
     public static void main(String[] args) {
 
-        boolean verbose = false; //prints the formulas for SAT if true
-        if (args.length > 2 && args[2].equals("verbose")) {
-            verbose = true; //prints the formulas for SAT if true
-        }
+        boolean verbose = args.length > 2 && args[2].equals("verbose"); //prints the formulas for SAT if true
+        //prints the formulas for SAT if true
 
         // read input from command line
         // Agent type
@@ -51,8 +49,13 @@ public class A3main {
             }
         }
         if (agent.unProbedCells.size() != 0&&!args[0].equals("P1")) {
-            for (int i = 0;i<agent.unProbedCells.size();i++) {
-                agent.markCell(agent.unProbedCells.get(0));
+            if (game.isGameWon()){
+                System.out.println("agent.unProbedCells");
+                System.out.println(agent.unProbedCells.size());
+                int length = agent.unProbedCells.size();
+                for (int i = 0;i<length;i++) {
+                    agent.makeDNFMove();
+                }
             }
         }
         printBoard(agent.getAgentBoard());
@@ -64,11 +67,6 @@ public class A3main {
         } else {
             System.out.println("\nResult: Agent not terminated\n");
         }
-        //templates to print results - copy to appropriate places
-        //System.out.println("\nResult: Agent alive: all solved\n");
-        //System.out.println("\nResult: Agent dead: found mine\n");
-        //System.out.println("\nResult: Agent not terminated\n");
-
     }
 
 

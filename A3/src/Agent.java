@@ -5,8 +5,7 @@ import org.logicng.io.parsers.ParserException;
 import org.logicng.io.parsers.PropositionalParser;
 import org.logicng.solvers.MiniSat;
 import org.logicng.solvers.SATSolver;
-import org.sat4j.minisat.SolverFactory;
-import org.sat4j.specs.ISolver;
+
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -335,50 +334,66 @@ public class Agent {
      */
     public void makeDNFMove() {
         freeNeighbours();
+        Cell currentCell = unProbedCells.get(0);
+        System.out.println(unProbedCells);
+        // Create the KB from the probed Cells
+        String kbString = convertKBU(uncoveredCells, "DNF");
+        System.out.println(kbString);
+        satSolver(kbString,currentCell);
+    }
+
+    /**
+     * prove that there is a danger in cell if kbu=>Txy is false or prove that the cell is clear if kbu=>~Txy is false
+     */
+    private void satSolver(String kbString, Cell currentCell) {
         FormulaFactory f = new FormulaFactory();
         PropositionalParser p = new PropositionalParser(f);
-        Cell currentCell = unProbedCells.get(0);
-        // Create the KB from the probed Cells
-        String kbString = convertKBU(uncoveredCells,"DNF");
-        System.out.println(kbString);
-        StringBuilder kbStringBuilder = new StringBuilder(kbString);
+        StringBuilder kbDanger = new StringBuilder(kbString);
+        StringBuilder kbClear = new StringBuilder(kbString);
         try {
-            Tristate result = Tristate.TRUE;
             //determine whether there are clue cell around the current cell
-            if (!kbStringBuilder.toString().equals("")) {
+            Tristate resultDanger = null;
+            Tristate resultClear = null;
+            if (!kbString.equals("")) {
                 //for every unProbed cells check whether the possibility of it containing a tornado is satisfiable.
-                // if not then the cell can be probed safely.
+                // if not then that prove the cell can be probed safely.
                 String clause = "T" + currentCell.getX() + currentCell.getY();
-                if (!kbStringBuilder.toString().contains(clause)){
-                    result = Tristate.UNDEF;
-                }else {
-                    kbStringBuilder.append("&");
-                    kbStringBuilder.append("(");
-                    kbStringBuilder.append("~");
-                    kbStringBuilder.append(clause);
-                    kbStringBuilder.append(")");
+                //prove that there is a danger
+                kbDanger.append("&");
+                kbDanger.append("(");
+                kbDanger.append("~");
+                kbDanger.append(clause);
+                kbDanger.append(")");
+                //prove that there is clear
+                kbClear.append("&");
+                kbClear.append("(");
+                kbClear.append(clause);
+                kbClear.append(")");
 
+                System.out.println(kbDanger);
+                System.out.println(kbClear);
 
-                    // parse the String representing the knowledge base into a logical formula
-                    System.out.println("kbStringBuilder");
-                    System.out.println(kbStringBuilder);
+                // parse the String representing the knowledge base into a logical formula
+                Formula formula1 = p.parse(kbDanger.toString());
+                Formula formula2 = p.parse(kbClear.toString());
 
-                    Formula formula = p.parse(kbStringBuilder.toString());
+                // instantiate the solver
+                SATSolver miniSat1 = MiniSat.miniSat(f);
+                SATSolver miniSat2 = MiniSat.miniSat(f);
+                miniSat1.add(formula1);
+                resultDanger = miniSat1.sat();
+                miniSat2.add(formula2);
+                resultClear = miniSat2.sat();
 
-                    // instantiate the solver
-                    SATSolver miniSat = MiniSat.miniSat(f);
-                    miniSat.add(formula);
-                    result = miniSat.sat();
-                }
-                System.out.println(result);
+                System.out.println(resultDanger);
+                System.out.println(resultClear);
             }
 
-            //
-            if (result == Tristate.FALSE) {
+            if (resultDanger == Tristate.FALSE) {
                 markCell(currentCell);
-            } else if (result == Tristate.TRUE){
+            } else if (resultClear == Tristate.FALSE) {
                 probeCell(currentCell);
-            }else {
+            } else {
                 unProbedCells.remove(currentCell);
                 unProbedCells.add(currentCell);
             }
@@ -422,9 +437,9 @@ public class Agent {
         // build the logical formula string
         StringBuilder stringBuilder = new StringBuilder();
         // get all the permutations, to be used when adding the negation
-            ArrayList<ArrayList<String>> permutedClauses = listPermutations(literals);
-            System.out.println("permutedClauses");
-            System.out.println(permutedClauses);
+        ArrayList<ArrayList<String>> permutedClauses = listPermutations(literals);
+        System.out.println("permutedClauses");
+        System.out.println(permutedClauses);
         for (ArrayList<String> currentClause : permutedClauses) {
             // nUnknowns - nTornados - nMarked is the number of free/safe cells around cell
             // used to get all possible scenarios
@@ -446,8 +461,8 @@ public class Agent {
             stringBuilder.append(")");
             stringBuilder.append("|");
         }
-            // delete trailing |
-            stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+        // delete trailing |
+        stringBuilder.deleteCharAt(stringBuilder.length() - 1);
         return stringBuilder.toString();
 
     }
@@ -493,7 +508,7 @@ public class Agent {
      * @param uncoveredCells cells that have been uncovered i.e. probed
      * @return a String representation of the knowledge base.
      */
-    public String convertKBU(ArrayList<Cell> uncoveredCells,String form) {
+    public String convertKBU(ArrayList<Cell> uncoveredCells, String form) {
         StringBuilder stringBuilder = new StringBuilder();
         for (Cell cell : uncoveredCells) {
 
@@ -502,10 +517,10 @@ public class Agent {
                 System.out.println("uncoveredCell");
                 System.out.println(cell);
                 String clause = "";
-                if (form.equals("DNF")){
-                     clause = createDNFClause(cell);
-                }else {
-                     clause = createCNFClause(cell);
+                if (form.equals("DNF")) {
+                    clause = createDNFClause(cell);
+                } else {
+                    clause = createCNFClause(cell);
                 }
                 if (!Objects.equals(clause, "")) {
                     stringBuilder.append("(");
@@ -526,7 +541,6 @@ public class Agent {
     }
 
 
-
     /*-----------CNF ---------*/
     public void makeCNFMove() {
         freeNeighbours();
@@ -536,50 +550,10 @@ public class Agent {
         // Create the KB from the probed Cells
         String kbString = convertKBU(uncoveredCells, "CNF");
         System.out.println(kbString);
-        StringBuilder kbStringBuilder = new StringBuilder(kbString);
-        try {
-            Tristate result;
-            //determine whether there are clue cell around the current cell
-            if (!kbStringBuilder.toString().equals("")) {
-                //for every unProbed cells check whether the possibility of it containing a tornado is satisfiable.
-                // if not then the cell can be probed safely.
-                String clause = "T" + currentCell.getX() + currentCell.getY();
-                if (!kbStringBuilder.toString().contains(clause)) {
-                    result = Tristate.UNDEF;
-                } else {
-                    kbStringBuilder.append("&");
-                    kbStringBuilder.append("(");
-                    kbStringBuilder.append("~");
-                    kbStringBuilder.append(clause);
-                    kbStringBuilder.append(")");
 
-
-                    // parse the String representing the knowledge base into a logical formula
-                    System.out.println("kbStringBuilder");
-                    System.out.println(kbStringBuilder);
-
-                    Formula formula = p.parse(kbStringBuilder.toString());
-
-                    // instantiate the solver
-                    SATSolver miniSat = MiniSat.miniSat(f);
-                    miniSat.add(formula);
-                    result = miniSat.sat();
-                }
-                System.out.println(result);
-                if (result == Tristate.FALSE) {
-                    markCell(currentCell);
-                } else if (result == Tristate.TRUE){
-                    probeCell(currentCell);
-                }else {
-                    unProbedCells.remove(currentCell);
-                    unProbedCells.add(currentCell);
-                }
-            }
-
-        } catch (ParserException e) {
-            throw new RuntimeException(e);
-        }
+        satSolver(kbString,currentCell);
     }
+
     private String createCNFClause(Cell cell) {
         // get all the neighbours of the cell
         ArrayList<Cell> neighbours = getNeighbours(cell, allCells);
@@ -609,14 +583,14 @@ public class Agent {
         // at most n is danger : cardinal = nTornadoes-nMarked+1
         System.out.println("atmost");
         System.out.println(literals);
-        System.out.println(nTornadoes-nMarked+1);
-        ArrayList<ArrayList<String>> clauses = encodeAtMost(literals,nTornadoes-nMarked+1);
+        System.out.println(nTornadoes - nMarked + 1);
+        ArrayList<ArrayList<String>> clauses = encodeAtMost(literals, nTornadoes - nMarked + 1);
 
         System.out.println("Clauses1");
         System.out.println(clauses);
         for (ArrayList<String> currentClause : clauses) {
             // used to get all possible scenarios
-            for (int j = 0; j <currentClause.size(); j++) {
+            for (int j = 0; j < currentClause.size(); j++) {
                 String clause = currentClause.get(j);
                 currentClause.remove(clause);
                 clause = "~" + clause;
@@ -625,12 +599,12 @@ public class Agent {
         }
 
         // at least n is danger : cardinal = nUnknowns-(nTornadoes-nMarked)+1 at most ?-n is no danger
-        ArrayList<ArrayList<String>> clauses2 = encodeAtMost(literals,nUnknowns-(nTornadoes-nMarked)+1);
+        ArrayList<ArrayList<String>> clauses2 = encodeAtMost(literals, nUnknowns - (nTornadoes - nMarked) + 1);
 
         System.out.println("clauses2");
         System.out.println(clauses2);
         System.out.println(clauses2.size());
-        clauses2 .addAll(clauses);
+        clauses2.addAll(clauses);
         System.out.println(clauses2);
 
         for (ArrayList<String> currentClause : clauses2) {
@@ -655,12 +629,12 @@ public class Agent {
         ArrayList<ArrayList<String>> result = new ArrayList<>();
         int n = literals.size();
         // If k is greater than n or k is 0, return an empty list
-        if ( k == 0) {
+        if (k == 0) {
             result.add(new ArrayList<>());
             return result;
-        }else if (k>n){
+        } else if (k > n) {
             return result;
-        }else {
+        } else {
             // Recursive case: generate all subsets of size k-1 and add the current element
             String first = literals.get(0);
             ArrayList<String> rest = new ArrayList<String>(literals.subList(1, literals.size()));
@@ -675,7 +649,6 @@ public class Agent {
             return result;
         }
     }
-
 
 
 //    /**
