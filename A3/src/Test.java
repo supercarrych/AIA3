@@ -42,7 +42,7 @@ public class Test {
             for (int i = 0; i < 10; i++) {
                 for (String agentType : agentTypes) {
                     for (String world : worlds) {
-                        // append the version of the world i.e. S1, S2, S3 etc....
+                        // append the version of the world i.e. SMALL0, MEDIUM0, LARGE0 etc....
                         world = world + i;
                         System.out.println("World: " + world + " Agent: " + agentType);
                         String result = A3main.play(agentType, world);
@@ -59,6 +59,17 @@ public class Test {
                                 makeCNFMoveWon++;
                             }
                         }
+                        if (result.equals("T")) {
+                            if (Objects.equals(agentType, "P1")) {
+                                orderMoveFail++;
+                            } else if (Objects.equals(agentType, "P2")) {
+                                SPSMoveFail++;
+                            } else if (Objects.equals(agentType, "P3")) {
+                                makeDNFMoveFail++;
+                            } else if (Objects.equals(agentType, "P4")) {
+                                makeCNFMoveFail++;
+                            }
+                        }
                     }
                 }
             }
@@ -67,10 +78,15 @@ public class Test {
         // print out the results
         System.out.println();
         System.out.println("------------------------------------------");
-        System.out.println("\torderMove won: " + orderMoveWon + "/" + (30) + " - " + Math.round(((Integer.valueOf(orderMoveWon).floatValue()/(30)) * 100)) + "% win rate");
-        System.out.println("\tSPSMove won: " + SPSMoveWon + "/" + (30) + " - " + Math.round(((Integer.valueOf(SPSMoveWon).floatValue()/(30)) * 100))+ "% win rate");
-        System.out.println("\tDNFMove won: " + makeDNFMoveWon + "/" + (30) + " - " + Math.round(((Integer.valueOf(makeDNFMoveWon).floatValue()/(30)) * 100)) + "% win rate");
-        System.out.println("\tCNFMove won: " + makeCNFMoveWon + "/" + (30) + " - " + Math.round(((Integer.valueOf(makeCNFMoveWon).floatValue()/(30)) * 100)) + "% win rate");
+        System.out.println("\torderMove won: " + orderMoveWon + "/" + 30 + " - " + Math.round(((Integer.valueOf(orderMoveWon).floatValue()/(30)) * 100)) + "% win rate");
+        System.out.println("\tSPSMove won: " + SPSMoveWon + "/" + 30 + " - " + Math.round(((Integer.valueOf(SPSMoveWon).floatValue()/(30)) * 100))+ "% win rate");
+        System.out.println("\tDNFMove won: " + makeDNFMoveWon + "/" + 30 + " - " + Math.round(((Integer.valueOf(makeDNFMoveWon).floatValue()/(30)) * 100)) + "% win rate");
+        System.out.println("\tCNFMove won: " + makeCNFMoveWon + "/" + 30 + " - " + Math.round(((Integer.valueOf(makeCNFMoveWon).floatValue()/(30)) * 100)) + "% win rate");
+        System.out.println("------------------------------------------ ");
+        System.out.println("\torderMove no loss: " + orderMoveFail + "/" + 30 + " - " + Math.round(((Integer.valueOf(orderMoveFail).floatValue()/(30)) * 100)) + "% no loss rate");
+        System.out.println("\tSPSMove no loss: " + SPSMoveFail + "/" + 30 + " - " + Math.round(((Integer.valueOf(SPSMoveFail).floatValue()/(30)) * 100))+ "% no loss rate");
+        System.out.println("\tDNFMove no loss: " + makeDNFMoveFail + "/" + 30 + " - " + Math.round(((Integer.valueOf(makeDNFMoveFail).floatValue()/(30)) * 100)) + "% no loss rate");
+        System.out.println("\tCNFMove no loss: " + makeCNFMoveFail + "/" + 30 + " - " + Math.round(((Integer.valueOf(makeCNFMoveFail).floatValue()/(30)) * 100)) + "% no loss rate");
         System.out.println("------------------------------------------ ");
     }
 }
