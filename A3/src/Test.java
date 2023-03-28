@@ -16,10 +16,10 @@ public class Test {
      * @param args can pass the number of times the 30 worlds are played by each agent. Default is 5
      */
     public static void main(String[] args) {
-        int orderMoveWon = 0;
-        int SPSMoveWon = 0;
-        int makeDNFMoveWon = 0;
-        int makeCNFMoveWon = 0;
+        int orderMoveWin = 0;
+        int SPSMoveWin = 0;
+        int makeDNFMoveWin = 0;
+        int makeCNFMoveWin = 0;
         int orderMoveFail = 0;
         int SPSMoveFail = 0;
         int makeDNFMoveFail = 0;
@@ -50,13 +50,13 @@ public class Test {
                         // if game is won, repending on the agent type, increment variable
                         if (result.equals("won")) {
                             if (Objects.equals(agentType, "P1")) {
-                                orderMoveWon++;
+                                orderMoveWin++;
                             } else if (Objects.equals(agentType, "P2")) {
-                                SPSMoveWon++;
+                                SPSMoveWin++;
                             } else if (Objects.equals(agentType, "P3")) {
-                                makeDNFMoveWon++;
+                                makeDNFMoveWin++;
                             } else if (Objects.equals(agentType, "P4")) {
-                                makeCNFMoveWon++;
+                                makeCNFMoveWin++;
                             }
                         }
                         if (result.equals("T")) {
@@ -78,15 +78,15 @@ public class Test {
         // print out the results
         System.out.println();
         System.out.println("------------------------------------------");
-        System.out.println("\torderMove won: " + orderMoveWon + "/" + 30 + " - " + Math.round(((Integer.valueOf(orderMoveWon).floatValue()/(30)) * 100)) + "% win rate");
-        System.out.println("\tSPSMove won: " + SPSMoveWon + "/" + 30 + " - " + Math.round(((Integer.valueOf(SPSMoveWon).floatValue()/(30)) * 100))+ "% win rate");
-        System.out.println("\tDNFMove won: " + makeDNFMoveWon + "/" + 30 + " - " + Math.round(((Integer.valueOf(makeDNFMoveWon).floatValue()/(30)) * 100)) + "% win rate");
-        System.out.println("\tCNFMove won: " + makeCNFMoveWon + "/" + 30 + " - " + Math.round(((Integer.valueOf(makeCNFMoveWon).floatValue()/(30)) * 100)) + "% win rate");
+        System.out.println("\torderMove win: " + orderMoveWin + "/" + 30 + " - " + Math.round(((Integer.valueOf(orderMoveWin).floatValue()/(30)) * 100)) + "%");
+        System.out.println("\tSPSMove win: " + SPSMoveWin + "/" + 30 + " - " + Math.round(((Integer.valueOf(SPSMoveWin).floatValue()/(30)) * 100))+ "%");
+        System.out.println("\tDNFMove win: " + makeDNFMoveWin + "/" + 30 + " - " + Math.round(((Integer.valueOf(makeDNFMoveWin).floatValue()/(30)) * 100)) + "%");
+        System.out.println("\tCNFMove win: " + makeCNFMoveWin + "/" + 30 + " - " + Math.round(((Integer.valueOf(makeCNFMoveWin).floatValue()/(30)) * 100)) + "%");
         System.out.println("------------------------------------------ ");
-        System.out.println("\torderMove no loss: " + orderMoveFail + "/" + 30 + " - " + Math.round(((Integer.valueOf(orderMoveFail).floatValue()/(30)) * 100)) + "% no loss rate");
-        System.out.println("\tSPSMove no loss: " + SPSMoveFail + "/" + 30 + " - " + Math.round(((Integer.valueOf(SPSMoveFail).floatValue()/(30)) * 100))+ "% no loss rate");
-        System.out.println("\tDNFMove no loss: " + makeDNFMoveFail + "/" + 30 + " - " + Math.round(((Integer.valueOf(makeDNFMoveFail).floatValue()/(30)) * 100)) + "% no loss rate");
-        System.out.println("\tCNFMove no loss: " + makeCNFMoveFail + "/" + 30 + " - " + Math.round(((Integer.valueOf(makeCNFMoveFail).floatValue()/(30)) * 100)) + "% no loss rate");
+        System.out.println("\torderMove no win and no loss: " + orderMoveFail + "/" + 30 + " - " + Math.round(((Integer.valueOf(orderMoveFail).floatValue()/(30)) * 100)) + "%");
+        System.out.println("\tSPSMove no win and no loss: " + SPSMoveFail + "/" + 30 + " - " + Math.round(((Integer.valueOf(SPSMoveFail).floatValue()/(30)) * 100))+ "%");
+        System.out.println("\tDNFMove no win and no loss: " + makeDNFMoveFail + "/" + 30 + " - " + Math.round(((Integer.valueOf(makeDNFMoveFail).floatValue()/(30)) * 100)) + "%");
+        System.out.println("\tCNFMove no win and no loss: " + makeCNFMoveFail + "/" + 30 + " - " + Math.round(((Integer.valueOf(makeCNFMoveFail).floatValue()/(30)) * 100)) + "%");
         System.out.println("------------------------------------------ ");
     }
 }
